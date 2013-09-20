@@ -50,7 +50,6 @@
     <Compile Include="NntpClient.cs" />
     <Compile Include="NntpEventArgs.cs" />
     <Compile Include="NntpException.cs" />
-    <Compile Include="NntpGroupList.cs" />
     <Compile Include="NntpHeader.cs" />
     <Compile Include="NntpHeaderList.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
