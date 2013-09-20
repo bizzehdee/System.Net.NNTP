@@ -28,12 +28,17 @@ using System.Collections.Generic;
 
 namespace System.Net.Nntp
 {
-  public class NntpHeaderList : List<NntpHeader>
-  {
-    public NntpHeaderList()
-      : base()
+    public class NntpHeaderList : List<NntpHeader>
     {
+        public NntpHeaderList()
+            : base()
+        {
 
+        }
+
+        public void Add(String n, String v)
+        {
+            Add(new NntpHeader(n, v));
+        }
     }
-  }
 }

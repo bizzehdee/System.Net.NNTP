@@ -27,12 +27,22 @@
 
 namespace System.Net.Nntp
 {
-  public class NntpException : System.ApplicationException
-  {
-    public NntpException(string str)
-      : base(str)
+    public class NntpException : ApplicationException
     {
+        public Int32 ExpectedResponse { get; private set; }
+        public Int32 ActualResponse { get; private set; }
 
+        public NntpException(string str)
+            : base(str)
+        {
+
+        }
+
+        public NntpException(string str, Int32 expected, Int32 actual)
+            : base(str)
+        {
+            ExpectedResponse = expected;
+            ActualResponse = actual;
+        }
     }
-  }
 }

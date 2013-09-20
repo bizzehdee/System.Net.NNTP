@@ -27,18 +27,18 @@
 
 namespace System.Net.Nntp
 {
-  public class NntpArticle
-  {
-    public String ID { get; set; }
-    public NntpHeaderList Headers { get; set;}
-    public String Body { get; set; }
-
-    public NntpArticle()
+    public class NntpArticle
     {
-      Headers = new NntpHeaderList();
-      ID = "";
-      Body = "";
-    }
+        public String ID { get; set; }
+        public NntpHeaderList Headers { get; set; }
+        public String Body { get; set; }
 
-  }
+        public NntpArticle()
+        {
+            Headers = new NntpHeaderList();
+            ID = "";
+            Body = "";
+        }
+
+    }
 }

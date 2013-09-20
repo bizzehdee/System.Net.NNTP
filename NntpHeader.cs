@@ -27,15 +27,15 @@
 
 namespace System.Net.Nntp
 {
-  public class NntpHeader
-  {
-    public String Name { get; set; }
-    public String Value { get; set; }
-    
-    public NntpHeader(String n, String v)
+    public class NntpHeader
     {
-      Name = n;
-      Value = v;
+        public String Name { get; set; }
+        public String Value { get; set; }
+
+        public NntpHeader(String n, String v)
+        {
+            Name = n;
+            Value = v;
+        }
     }
-  }
 }

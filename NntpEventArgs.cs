@@ -27,15 +27,15 @@
 
 namespace System.Net.Nntp
 {
-  class NntpEventArgs : EventArgs
-  {
-    public byte[] Data { get; set; }
-    public UInt32 Line { get; set; }
-
-    public NntpEventArgs(byte[] a, UInt32 l)
+    class NntpEventArgs : EventArgs
     {
-      Data = a;
-      Line = l;
+        public byte[] Data { get; set; }
+        public UInt32 Line { get; set; }
+
+        public NntpEventArgs(byte[] a, UInt32 l)
+        {
+            Data = a;
+            Line = l;
+        }
     }
-  }
 }
