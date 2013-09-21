@@ -48,6 +48,7 @@
   <ItemGroup>
     <Compile Include="NntpArticle.cs" />
     <Compile Include="NntpClient.cs" />
+    <Compile Include="NntpConnectionEventArgs.cs" />
     <Compile Include="NntpEventArgs.cs" />
     <Compile Include="NntpException.cs" />
     <Compile Include="NntpHeader.cs" />

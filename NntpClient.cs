@@ -49,8 +49,13 @@ namespace System.Net.Nntp
         private readonly TcpClient _client;
         private Stream _clientStream;
 
-        public delegate void OnDataRecievedCB(object sender, EventArgs e);
-        public event OnDataRecievedCB OnDataRecieved;
+        public delegate void DataRecievedHandler(byte[] data, UInt32 line);
+        public delegate void DataRecievedCB(object sender, EventArgs e);
+        public event DataRecievedCB DataRecieved;
+        public delegate void ConnectionFailedCB(object sender, EventArgs e);
+        public event ConnectionFailedCB ConnectionFailed;
+
+        public Boolean UsingSSL { get; private set; }
 
         /// <summary>
         /// Constructor, creates the tcpip client
@@ -88,13 +93,11 @@ namespace System.Net.Nntp
         /// <param name="useSSL">use ssl during connection</param>
         public void Connect(String server, Int32 port, bool useSSL)
         {
-            String response = "";
-
             _client.Connect(server, port);
 
-            response = this.Response();
-
             _clientStream = _client.GetStream();
+
+            UsingSSL = useSSL;
 
             //do we want to use ssl?
             if (useSSL)
@@ -106,12 +109,20 @@ namespace System.Net.Nntp
                 _clientStream = sslStream;
             }
 
-            if (response.Substring(0, 3) != "200")
-            {
-                throw new NntpException(response, 200, Int32.Parse(response.Substring(0, 3)));
-            }
+            String response = Response();
 
-            //GetHelp();
+            String responseCode = response.Substring(0, 3);
+            if (responseCode != "200")
+            {
+                NntpConnectionEventArgs eventArgs = new NntpConnectionEventArgs(Int32.Parse(responseCode));
+
+                if(ConnectionFailed != null) ConnectionFailed(this, eventArgs);
+
+                if (!eventArgs.SuppressException)
+                {
+                    throw new NntpException(response, 200, Int32.Parse(response.Substring(0, 3)));
+                }
+            }
         }
 
         /// <summary>
@@ -142,7 +153,7 @@ namespace System.Net.Nntp
         {
             String response = "";
 
-            Write("AUTHINFO USER " + user);
+            Write("AUTHINFO USER {0}", user);
 
             response = Response();
 
@@ -166,7 +177,7 @@ namespace System.Net.Nntp
         {
             String response = "";
 
-            Write("AUTHINFO PASS " + pass);
+            Write("AUTHINFO PASS {0}", pass);
 
             response = Response();
 
@@ -201,7 +212,7 @@ namespace System.Net.Nntp
             String response = "";
             List<String> groupList = new List<String>();
 
-            Write("LIST");
+            Write("LIST ACTIVE {0}", match);
 
             response = Response();
 
@@ -221,19 +232,8 @@ namespace System.Net.Nntp
                 }
 
                 String[] values = response.Split(' ');
-                if (match == "") /*ignore expensive regex if we dont need to use it */
-                {
-                    groupList.Add(values[0]);
-                }
-                else
-                {
-                    Match regexMatch = Regex.Match(values[0], match, RegexOptions.ECMAScript | RegexOptions.IgnoreCase);
 
-                    if (regexMatch.Success)
-                    {
-                        groupList.Add(values[0]);
-                    }
-                }
+                groupList.Add(values[0]);
             }
         }
 
@@ -243,7 +243,7 @@ namespace System.Net.Nntp
         /// <param name="group">newsgroup name. e.g. alt.bin.misc</param>
         public void SelectGroup(String group)
         {
-            Write("GROUP " + group);
+            Write("GROUP {0}", group);
 
             String response = Response();
 
@@ -283,7 +283,7 @@ namespace System.Net.Nntp
 
             NntpHeaderList headers = new NntpHeaderList();
 
-            Write("HEAD <" + article + ">");
+            Write(String.Format("HEAD <{0}>", article));
 
             String response = Response();
 
@@ -318,11 +318,22 @@ namespace System.Net.Nntp
         /// <returns>String containing body of article</returns>
         public String GetArticleBody(String article)
         {
+            return GetArticleBody(article, null);
+        }
+
+        /// <summary>
+        /// Gets the raw body for the specified article
+        /// </summary>
+        /// <param name="article">message id</param>
+        /// <param name="action"></param>
+        /// <returns>String containing body of article</returns>
+        public String GetArticleBody(String article, DataRecievedHandler action)
+        {
             if (String.IsNullOrEmpty(article)) throw new ArgumentNullException("article");
 
             StringBuilder articleBuilder = new StringBuilder();
 
-            Write("BODY <" + article + ">");
+            Write("BODY <{0}>", article);
 
             String response = this.Response();
 
@@ -336,10 +347,21 @@ namespace System.Net.Nntp
             {
                 response = Response();
 
-                if (OnDataRecieved != null)
+                if (DataRecieved != null || action != null)
                 {
                     byte[] bytes = Encoding.ASCII.GetBytes(response);
-                    OnDataRecieved(this, new NntpEventArgs(bytes, i++));
+
+                    if (DataRecieved != null)
+                    {
+                        DataRecieved(this, new NntpEventArgs(bytes, i));
+                    }
+
+                    if (action != null)
+                    {
+                        action(bytes, i);
+                    }
+
+                    i++;
                 }
 
                 if (response == ".\r\n" || response == ".\n")
@@ -359,11 +381,20 @@ namespace System.Net.Nntp
 
         private void Write(String str)
         {
+            Write(str, new object[] { });
+        }
+
+        private void Write(String str, params object[] args)
+        {
+            if (args == null) throw new ArgumentNullException("args");
+
             ASCIIEncoding enc = new ASCIIEncoding();
 
-            if (!str.EndsWith("\r\n")) str += "\r\n";
+            String writeString = String.Format(str, args);
 
-            byte[] buffer = enc.GetBytes(str);
+            if (!writeString.EndsWith("\r\n")) writeString += "\r\n";
+
+            byte[] buffer = enc.GetBytes(writeString);
 
             _clientStream.Write(buffer, 0, buffer.Length);
         }
